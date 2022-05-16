@@ -5,6 +5,9 @@ import torch.nn as nn
 
 
 def get_qparams(max_val, min_val, num_bits, signed, eps, symmetric):
+    min_val = torch.tensor([0.00001]) if (min_val.sum() == 0 or min_val.numel() == 0) else min_val
+    max_val = torch.tensor([0.00001]) if (max_val.sum() == 0 or max_val.numel() == 0) else max_val
+
     max_val, min_val = float(max_val), float(min_val)
     min_val = min(0.0, min_val)
     max_val = max(0.0, max_val)

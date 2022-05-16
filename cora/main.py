@@ -1,8 +1,8 @@
 import argparse
 
-from reddit_binary.dataset import get_dataset
-from reddit_binary.train_eval import cross_validation_with_val_set
-from reddit_binary.gin import GIN
+from cora.dataset import get_dataset
+from cora.train_eval import cross_validation_with_val_set
+from cora.gin import GIN
 import reddit_binary.utils as utils
 
 # This code is substantially derived from PyTorch Geometric's repo
@@ -57,7 +57,7 @@ ste_mode.add_argument("--gc_per", action="store_true", help="GC-PER")
 
 args = parser.parse_args()
 
-dataset_name = "REDDIT-BINARY"
+dataset_name = "Cora"
 
 
 def count_parameters(model):

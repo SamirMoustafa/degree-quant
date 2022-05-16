@@ -123,7 +123,7 @@ class MessagePassingMultiQuant(Module):
                     continue
 
                 self.__set_size__(size, idx, data)
-                out[arg] = data.index_select(self.node_dim, edge_index[idx])
+                out[arg] = data.index_select(self.node_dim, edge_index.to(data.device)[idx])
 
         size[0] = size[1] if size[0] is None else size[0]
         size[1] = size[0] if size[1] is None else size[1]
@@ -168,7 +168,7 @@ class MessagePassingMultiQuant(Module):
             edge_mask = torch.index_select(mask, 0, edge_index[0])
             out = torch.empty_like(msg)
             out[edge_mask] = self.mp_quantizers["message_high"](msg[edge_mask])
-            out[~edge_mask] = self.mp_quantizers["message_low"](msg[~edge_mask])
+            # out[~edge_mask] = self.mp_quantizers["message_low"](msg[~edge_mask])
         else:
             out = self.mp_quantizers["message_low"](msg)
 
@@ -177,7 +177,7 @@ class MessagePassingMultiQuant(Module):
         if self.training:
             out = torch.empty_like(aggrs)
             out[mask] = self.mp_quantizers["aggregate_high"](aggrs[mask])
-            out[~mask] = self.mp_quantizers["aggregate_low"](aggrs[~mask])
+            # out[~mask] = self.mp_quantizers["aggregate_low"](aggrs[~mask])
         else:
             out = self.mp_quantizers["aggregate_low"](aggrs)
 
@@ -186,7 +186,7 @@ class MessagePassingMultiQuant(Module):
         if self.training:
             out = torch.empty_like(updates)
             out[mask] = self.mp_quantizers["update_high"](updates[mask])
-            out[~mask] = self.mp_quantizers["update_low"](updates[~mask])
+            # out[~mask] = self.mp_quantizers["update_low"](updates[~mask])
         else:
             out = self.mp_quantizers["update_low"](updates)
 
@@ -196,7 +196,7 @@ class MessagePassingMultiQuant(Module):
         return x_j
 
     def aggregate(self, inputs, index, dim_size):  # pragma: no cover
-        return scatter_(self.aggr, inputs, index, self.node_dim, dim_size)
+        return scatter_(self.aggr, inputs, index.to(inputs.device), self.node_dim, dim_size)
 
     def update(self, inputs):  # pragma: no cover
         return inputs
@@ -539,7 +539,7 @@ class GINConvMultiQuant(MessagePassingMultiQuant):
         # evaluate it. This is likely to further boost performance, but is not
         # fully tested due to the cost of running experiments.
         # Complete masking is properly implemented for GCN / GAT
-        return self.nn((1 + self.eps) * x + aggr_out)
+        return self.nn((1 + self.eps) * x.to(self.eps.device) + aggr_out.to(self.eps.device))
 
     def __repr__(self):
         return "{}(nn={})".format(self.__class__.__name__, self.nn)
