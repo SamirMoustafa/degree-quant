@@ -3,7 +3,7 @@ from torch_geometric.datasets import TUDataset
 from torch_geometric.utils import degree
 import torch_geometric.transforms as T
 
-from degree_quant.dq.transforms import ProbabilisticHighDegreeMask
+from dq.transforms import ProbabilisticHighDegreeMask
 
 
 # Follows the setup used by PyTorch Geometric

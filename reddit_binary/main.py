@@ -1,8 +1,8 @@
 import argparse
 
-from degree_quant.reddit_binary.dataset import get_dataset
-from degree_quant.reddit_binary.train_eval import cross_validation_with_val_set
-from degree_quant.reddit_binary.gin import DegreeQuantGIN
+from reddit_binary.dataset import get_dataset
+from reddit_binary.train_eval import cross_validation_with_val_set
+from reddit_binary.gin import DegreeQuantGIN
 
 ################################################################################################
 # REACH INT8-DQ acc of 91.8%
@@ -46,7 +46,7 @@ ste_mode.add_argument("--gc_per", action="store_true", help="GC-PER")
 
 args = parser.parse_args()
 
-dataset_name = "MUTAG"
+dataset_name = "REDDIT-BINARY"
 
 
 def count_parameters(model):
@@ -87,7 +87,7 @@ print(args)
 # below is just the default from PyG
 dataset = get_dataset(args.path, dataset_name, sparse=True, degree_quant_arguments=degree_quant_arguments)
 
-model = DegreeQuantGIN(dataset.data.num_features,
+model = DegreeQuantGIN(dataset[0].x.shape[1],
                        dataset.num_classes,
                        hidden_channels=args.hidden,
                        num_layers=args.num_layers,

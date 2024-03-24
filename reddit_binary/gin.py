@@ -1,11 +1,11 @@
 import torch
 import torch.nn.functional as F
-from torch.nn import Linear, Sequential, ReLU, Identity, BatchNorm1d, ModuleList
+from torch.nn import Sequential, ReLU, Identity, BatchNorm1d, ModuleList
 from torch_geometric.nn import global_max_pool
 
-from degree_quant.dq.quantization import IntegerQuantizer
-from degree_quant.dq.q_linear import QuantLinear
-from degree_quant.dq.dq_message_passing import evaluate_prob_mask, GINConvMultiQuant
+from dq.quantization import IntegerQuantizer
+from dq.q_linear import QuantLinear
+from dq.dq_message_passing import evaluate_prob_mask, GINConvMultiQuant
 
 
 def integer_quantizer(qypte, momentum, percentile, signed, sample_prop):
