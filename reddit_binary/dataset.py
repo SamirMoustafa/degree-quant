@@ -3,7 +3,7 @@ from torch_geometric.datasets import TUDataset
 from torch_geometric.utils import degree
 import torch_geometric.transforms as T
 
-from dq.transforms import ProbabilisticHighDegreeMask
+from degree_quant.dq.transforms import ProbabilisticHighDegreeMask
 
 
 # Follows the setup used by PyTorch Geometric
@@ -21,7 +21,7 @@ class NormalizedDegree(object):
         return data
 
 
-def get_dataset(path, name, sparse=True, cleaned=False, DQ=None):
+def get_dataset(path, name, sparse=True, cleaned=False, degree_quant_arguments=None):
     dataset = TUDataset(path, name, cleaned=cleaned)
     dataset.data.edge_attr = None
 
@@ -62,13 +62,13 @@ def get_dataset(path, name, sparse=True, cleaned=False, DQ=None):
         else:
             dataset.transform = T.Compose([dataset.transform, T.ToDense(num_nodes)])
 
-    if DQ is not None:
-        print(f"Generating ProbabilisticHighDegreeMask: {DQ}")
+    if degree_quant_arguments is not None:
+        print(f"Generating ProbabilisticHighDegreeMask: {degree_quant_arguments}")
         dq_transform = ProbabilisticHighDegreeMask(
-            DQ["prob_mask_low"], min(DQ["prob_mask_low"] + DQ["prob_mask_change"], 1.0)
+            degree_quant_arguments["prob_mask_low"], min(degree_quant_arguments["prob_mask_low"] + degree_quant_arguments["prob_mask_change"], 1.0)
         )
         # NOTE: see issue #1 if you are customizing for your own dataset
         # dataset.transform may be None (not the case here)
-        dataset.transform = T.Compose([dataset.transform, dq_transform])
+        dataset.transform = T.Compose([dataset.transform, dq_transform]) if dataset.transform is not None else dq_transform
 
     return dataset

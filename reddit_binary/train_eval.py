@@ -11,20 +11,17 @@ from torch_geometric.data import DataLoader, DenseDataLoader as DenseLoader
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
-def cross_validation_with_val_set(
-    dataset,
-    model,
-    folds,
-    epochs,
-    batch_size,
-    lr,
-    lr_decay_factor,
-    lr_decay_step_size,
-    weight_decay,
-    use_tqdm=True,
-    writer=None,
-    logger=None,
-):
+def cross_validation_with_val_set(dataset,
+                                  model,
+                                  folds,
+                                  epochs,
+                                  batch_size,
+                                  lr,
+                                  lr_decay_factor,
+                                  lr_decay_step_size,
+                                  weight_decay,
+                                  use_tqdm=True,
+                                  ):
 
     val_losses, accs, durations = [], [], []
 
@@ -45,49 +42,24 @@ def cross_validation_with_val_set(
 
         model.to(device).reset_parameters()
         optimizer = Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=lr_decay_step_size, gamma=lr_decay_factor)
 
         if torch.cuda.is_available():
             torch.cuda.synchronize()
 
         t_start = time.perf_counter()
 
-        if use_tqdm:
-            t = tqdm(total=epochs, desc="Fold #" + str(fold))
-        for epoch in range(1, epochs + 1):
+        pbar = tqdm(range(1, epochs + 1)) if use_tqdm else range(1, epochs + 1)
+        for epoch in pbar:
             train_loss = train(model, optimizer, train_loader)
+            scheduler.step()
+
             val_loss = eval_loss(model, val_loader)
             val_losses.append(val_loss)
             accs.append(eval_acc(model, test_loader))
-            eval_info = {
-                "fold": fold,
-                "epoch": epoch,
-                "train_loss": train_loss,
-                "val_loss": val_losses[-1],
-                "test_acc": accs[-1],
-            }
-
-            if logger is not None:
-                logger(eval_info)
-
-            if writer is not None:
-                writer.add_scalar(f"Fold{fold}/Train_Loss", train_loss, epoch)
-                writer.add_scalar(f"Fold{fold}/Val_Loss", val_loss, epoch)
-                writer.add_scalar(
-                    f"Fold{fold}/Lr", optimizer.param_groups[0]["lr"], epoch
-                )
-
-            if epoch % lr_decay_step_size == 0:
-                for param_group in optimizer.param_groups:
-                    param_group["lr"] = lr_decay_factor * param_group["lr"]
-
             if use_tqdm:
-                t.set_postfix(
-                    {
-                        "Train_Loss": "{:05.3f}".format(train_loss),
-                        "Val_Loss": "{:05.3f}".format(val_loss),
-                    }
-                )
-                t.update(1)
+                pbar.set_description(f"Fold: {fold + 1}, Loss: {train_loss:.2f}")
+                pbar.set_postfix({"acc": f"{accs[-1]:.2f}"})
 
         if torch.cuda.is_available():
             torch.cuda.synchronize()
@@ -103,17 +75,7 @@ def cross_validation_with_val_set(
     acc_mean = acc.mean().item()
     acc_std = acc.std().item()
     duration_mean = duration.mean().item()
-    print(
-        "Val Loss: {:.4f}, Test Accuracy: {:.3f} ± {:.3f}, Duration: {:.3f}".format(
-            loss_mean, acc_mean, acc_std, duration_mean
-        )
-    )
-    if writer is not None:
-        writer.add_scalar(f"Final/Test_Acc", acc_mean, epoch)
-        writer.add_scalar(f"Final/Test_Acc_Std", acc_std, epoch)
-        writer.add_scalar(f"Final/Test_Loss", loss_mean, epoch)
-        writer.close()
-
+    print("Val Loss: {:.4f}, Test Accuracy: {:.3f} ± {:.3f}, Duration: {:.3f}".format(loss_mean, acc_mean, acc_std, duration_mean))
     return loss_mean, acc_mean, acc_std
 
 
